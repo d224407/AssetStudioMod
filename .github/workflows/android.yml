@@ -1,0 +1,56 @@
+name: AssetStudioModCLI Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - "android/**"
+      - "AssetStudioCLI/**"
+      - "AssetStudio/**"
+      - "AssetStudioUtility/**"
+      - "Texture2DDecoderNative/**"
+      - ".github/workflows/android.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ooz source (Ooz_Decompress), with the simde submodule
+      - uses: actions/checkout@v4
+        with:
+          repository: zao/ooz
+          path: ooz-src
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Managed CLI + bionic runtime
+        run: bash android/make-bionic.sh . out net9.0
+
+      - name: Texture decoder (NDK)
+        run: bash android/build-t2d.sh . out
+
+      - name: libooz (NDK)
+        run: bash android/build-ooz.sh ooz-src out
+
+      - name: Check native libs
+        run: |
+          ls -l out/*.so
+          for f in out/libfmod.so out/libooz.so out/libTexture2DDecoderNative.so; do
+            readelf -d "$f" | grep -E "SONAME|NEEDED"
+          done
+
+      - name: Package
+        run: cd out && zip -qr ../AssetStudioModCLI-android-arm64.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AssetStudioModCLI-android-arm64
+          path: AssetStudioModCLI-android-arm64.zip
