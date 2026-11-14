@@ -1,7 +1,2 @@
-# AssetStudioMod CLI for Android (bionic arm64)
-
-1. `scripts/make-bionic.sh <src> out` - managed CLI + bionic .NET runtime.
-2. `scripts/build-t2d.sh <src> out` - texture decoder built with the NDK.
-3. Copy `out/` to the device and run `./AssetStudioModCLI --help` (Termux, or an app with targetSdk 28).
-
-Not covered yet: libooz (Oodle), libfmod (audio), FBX export.
+Android app: android-app/ (Kotlin UI + bundled AssetStudioModCLI). CI: .github/workflows/android.yml
+Keystore (once): android/make-keystore.sh -> secrets KEYSTORE_CONTENT/ALIAS/PASSWORD

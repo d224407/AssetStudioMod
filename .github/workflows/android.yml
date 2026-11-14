@@ -1,24 +1,23 @@
-name: AssetStudioModCLI Android
+name: Android
 
 on:
-  workflow_dispatch:
   push:
-    branches: [master]
-    paths:
-      - "android/**"
-      - "AssetStudioCLI/**"
-      - "AssetStudio/**"
-      - "AssetStudioUtility/**"
-      - "Texture2DDecoderNative/**"
-      - ".github/workflows/android.yml"
+    branches: [master, main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_CONTENT != '' }}
     steps:
       - uses: actions/checkout@v4
 
-      # ooz source (Ooz_Decompress), with the simde submodule
       - uses: actions/checkout@v4
         with:
           repository: zao/ooz
@@ -31,26 +30,68 @@ jobs:
             9.0.x
             10.0.x
 
-      - name: Managed CLI + bionic runtime
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: CLI (bionic runtime)
         run: bash android/make-bionic.sh . out net9.0
 
-      - name: Texture decoder (NDK)
+      - name: Texture decoder
         run: bash android/build-t2d.sh . out
 
-      - name: libooz (NDK)
+      - name: Oodle
         run: bash android/build-ooz.sh ooz-src out
 
-      - name: Check native libs
+      - name: Bundle CLI into the app
         run: |
-          ls -l out/*.so
-          for f in out/libfmod.so out/libooz.so out/libTexture2DDecoderNative.so; do
-            readelf -d "$f" | grep -E "SONAME|NEEDED"
-          done
+          A=android-app/app/src/main/assets
+          mkdir -p $A
+          (cd out && zip -qr ../$A/cli.zip .)
+          echo "tag=android.${{ github.run_number }}" > $A/cli.info
+          cp $A/cli.zip AssetStudioModCLI-android-arm64.zip
 
-      - name: Package
-        run: cd out && zip -qr ../AssetStudioModCLI-android-arm64.zip .
+      - name: Release keystore
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_CONTENT: ${{ secrets.KEYSTORE_CONTENT }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_CONTENT" | base64 -d > "$RUNNER_TEMP/release.jks"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.jks" "$KEYSTORE_PASSWORD" "$KEYSTORE_ALIAS" "$KEYSTORE_PASSWORD" \
+            > android-app/keystore.properties
+
+      - name: Build APK
+        working-directory: android-app
+        run: gradle assembleRelease --no-daemon -PbuildNumber=${{ github.run_number }}
+
+      - name: Collect
+        run: |
+          cp android-app/app/build/outputs/apk/release/app-release.apk "AssetStudioMod-Android-${{ github.run_number }}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: AssetStudioModCLI-android-arm64
-          path: AssetStudioModCLI-android-arm64.zip
+          name: AssetStudioMod-Android
+          path: |
+            AssetStudioMod-Android-*.apk
+            AssetStudioModCLI-android-arm64.zip
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=${{ github.run_number }}
+          printf '%s\n' \
+            "- Export assets, dumps and Live2D from Unity files and bundles" \
+            "- Textures, sprites, audio, text, fonts, shaders, meshes, video" \
+            "- Image format, grouping, name filter, overwrite options" \
+            "- Runs in the background with a live log" > notes.md
+          gh release create "android-$N" "AssetStudioMod-Android-$N.apk" AssetStudioModCLI-android-arm64.zip \
+            --target "$GITHUB_SHA" --title "Android $N" --notes-file notes.md
