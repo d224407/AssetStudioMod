@@ -149,8 +149,8 @@ class MainActivity : AppCompatActivity() {
         add(labeled("Image", image), 0)
         add(labeled("Audio", audio), 0)
         add(labeled("Group by", group), 0)
-        add(filter)
-        add(extra)
+        add(filter.tag as View)
+        add(extra.tag as View)
         add(overwrite)
 
         run = MaterialButton(this).apply { setOnClickListener { onRun() } }
