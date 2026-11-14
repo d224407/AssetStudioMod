@@ -13,6 +13,11 @@ mkdir -p "$DEST"; DEST="$(cd "$DEST" && pwd)"
 test -f "$SRC/simde/simde/x86/sse2.h" || \
   { rm -rf "$SRC/simde"; git clone -q --depth 1 https://github.com/simd-everywhere/simde "$SRC/simde"; }
 
+# NDK libc++ has no std::char_traits<unsigned char>; use a vector instead
+sed -i -e 's/std::basic_string<uint8> tempstring;/std::vector<uint8> tempstring;/' \
+  -e 's/tempstring\.append(array_data\[j\] + pear\.char_idx, pear\.char_count);/tempstring.insert(tempstring.end(), array_data[j] + pear.char_idx, array_data[j] + pear.char_idx + pear.char_count);/' \
+  "$SRC/compr_multiarray.cpp"
+
 cmake -S "$SRC" -B "$DEST/.ooz-build" \
   -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
   -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-$API \
