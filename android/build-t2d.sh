@@ -9,6 +9,9 @@ NDK="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}}"
 test -d "$NDK" || { echo "Android NDK not found" >&2; exit 1; }
 mkdir -p "$DEST"
 
+# crunch assumes 32-bit pointers unless x86_64; make aarch64 use 64-bit ptr_bits
+sed -i 's/#ifdef __x86_64__/#if defined(__x86_64__) || defined(__aarch64__)/' "$SRC/Texture2DDecoderNative/crunch/crn_decomp.h"
+
 # clang treats narrowing in braced init as an error; the code relies on it being a warning
 cmake -S "$SRC/Texture2DDecoderNative" -B "$DEST/.t2d-build" \
   -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
