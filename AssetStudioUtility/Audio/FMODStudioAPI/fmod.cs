@@ -22,7 +22,7 @@ namespace FMOD
     */
     public partial class VERSION
     {
-        public const int    number = 0x00020306;
+        public const int    number = 0x00020315;
         public const string dll    = "fmod";
     }
 
