@@ -100,6 +100,7 @@ class CliService : Service() {
             pb.redirectErrorStream(true)
             pb.environment().apply {
                 put("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1")
+                put("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "false")
                 put("DOTNET_gcServer", "0")
                 put("DOTNET_TieredPGO", "0")
                 put("HOME", home.path)
