@@ -16,7 +16,7 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-/** Runs AssetStudioModCLI as a child process inside a foreground service. */
+/** Runs the CLI as a child process in a foreground service. */
 class CliService : Service() {
 
     companion object {

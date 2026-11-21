@@ -87,10 +87,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           N=${{ github.run_number }}
-          printf '%s\n' \
-            "- Export assets, dumps and Live2D from Unity files and bundles" \
-            "- Textures, sprites, audio, text, fonts, shaders, meshes, video" \
-            "- Image format, grouping, name filter, overwrite options" \
-            "- Runs in the background with a live log" > notes.md
+          echo "AssetStudioMod CLI for Android (arm64)" > notes.md
           gh release create "android-$N" "AssetStudioMod-Android-$N.apk" AssetStudioModCLI-android-arm64.zip \
             --target "$GITHUB_SHA" --title "Android $N" --notes-file notes.md

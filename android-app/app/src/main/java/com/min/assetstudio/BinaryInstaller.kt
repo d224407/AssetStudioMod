@@ -9,7 +9,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
-/** Unpacks assets/cli.zip into filesDir/cli/<BUILD_TAG>/ (tag in cli.info must match the app). */
+/** Unpacks assets/cli.zip into filesDir/cli/<tag>. */
 object BinaryInstaller {
     const val EXE = "AssetStudioModCLI"
     private const val OK = ".ok"

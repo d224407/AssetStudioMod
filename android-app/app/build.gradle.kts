@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
-// Injected by CI; the APK and the bundled CLI come from the same job.
+// Set by CI
 val buildNumber = (findProperty("buildNumber") as String?)?.toIntOrNull() ?: 1
 val buildTag = "android.$buildNumber"
 
@@ -22,7 +22,7 @@ android {
     defaultConfig {
         applicationId = "com.min.assetstudio"
         minSdk = 26
-        // targetSdk 28: apps targeting 29+ cannot execve() files from their data dir.
+        // targetSdk 28: 29+ cannot exec files from data dir
         targetSdk = 28
         versionCode = buildNumber
         versionName = buildTag

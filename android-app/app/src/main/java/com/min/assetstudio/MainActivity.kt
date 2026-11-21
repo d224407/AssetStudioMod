@@ -28,7 +28,7 @@ import com.google.android.material.textfield.TextInputLayout
 
 class MainActivity : AppCompatActivity() {
 
-    private val modes = listOf("export", "exportRaw", "extract", "dump", "jsonDump", "info", "live2d")
+    private val modes = listOf("export", "exportRaw", "extract", "dump", "jsonDump", "info", "live2d", "splitObjects", "animator")
     private val types = listOf(
         "tex2d", "tex2dArray", "sprite", "textAsset", "monoBehaviour", "font",
         "shader", "movieTexture", "audio", "video", "mesh"
@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private val images = listOf("png", "jpg", "webp", "bmp", "tga", "none")
     private val audios = listOf("wav", "none")
     private val groups = listOf("container", "type", "none", "fileName", "containerFull", "sceneHierarchy")
+    private val names = listOf("assetName", "assetName_pathID", "pathID", "assetName_hash")
 
     private lateinit var input: TextInputEditText
     private lateinit var output: TextInputEditText
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var image: Spinner
     private lateinit var audio: Spinner
     private lateinit var group: Spinner
+    private lateinit var name: Spinner
     private lateinit var overwrite: MaterialSwitch
     private lateinit var chips: ChipGroup
     private lateinit var run: MaterialButton
@@ -124,8 +126,7 @@ class MainActivity : AppCompatActivity() {
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(24), dp(16), dp(16))
-            showDividers = LinearLayout.SHOW_DIVIDER_NONE
-        }
+            }
         fun add(v: View, top: Int = 8) {
             col.addView(v, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also {
                 it.topMargin = dp(top)
@@ -136,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         output = field("Output folder")
         filter = field("Filter by name (a,b)")
         extra = field("Extra arguments")
-        mode = spinner(modes); image = spinner(images); audio = spinner(audios); group = spinner(groups)
+        mode = spinner(modes); image = spinner(images); audio = spinner(audios); group = spinner(groups); name = spinner(names)
         overwrite = MaterialSwitch(this).apply { text = "Overwrite existing" }
         chips = ChipGroup(this)
         types.forEach { t -> chips.addView(Chip(this).apply { text = t; isCheckable = true; tag = t }) }
@@ -144,11 +145,12 @@ class MainActivity : AppCompatActivity() {
         add(wrap(input, btn("Folder") { pickDir.launch(null) }, btn("File") { pickFile.launch(arrayOf("*/*")) }), 0)
         add(wrap(output, btn("Pick") { pickOut.launch(null) }))
         add(labeled("Mode", mode))
-        add(TextView(this).apply { text = "Asset types (none = all)" })
+        add(TextView(this).apply { text = "Asset types" })
         add(chips, 0)
         add(labeled("Image", image), 0)
         add(labeled("Audio", audio), 0)
         add(labeled("Group by", group), 0)
+        add(labeled("File name", name), 0)
         add(filter.tag as View)
         add(extra.tag as View)
         add(overwrite)
@@ -173,7 +175,7 @@ class MainActivity : AppCompatActivity() {
     private fun setPath(uri: Uri?, tree: Boolean, target: TextInputEditText) {
         if (uri == null) return
         val p = PathResolver.resolve(uri, tree)
-        if (p == null) Toast.makeText(this, "Unsupported location; type the path", Toast.LENGTH_LONG).show()
+        if (p == null) Toast.makeText(this, "Unsupported location", Toast.LENGTH_LONG).show()
         else target.setText(p)
     }
 
@@ -193,10 +195,12 @@ class MainActivity : AppCompatActivity() {
         val out = output.text.toString().trim().ifEmpty { "/sdcard/AssetStudio" }
         val args = mutableListOf(inp, "-m", mode.selectedItem.toString(), "-o", out)
         val sel = (0 until chips.childCount).map { chips.getChildAt(it) as Chip }.filter { it.isChecked }.map { it.tag as String }
-        if (sel.isNotEmpty()) args += listOf("-t", sel.joinToString(","))
+        val split = mode.selectedItem.toString().let { it == "splitObjects" || it == "animator" }
+        if (sel.isNotEmpty() && !split) args += listOf("-t", sel.joinToString(","))
         args += listOf("--image-format", image.selectedItem.toString())
         args += listOf("--audio-format", audio.selectedItem.toString())
         args += listOf("-g", group.selectedItem.toString())
+        args += listOf("-f", name.selectedItem.toString())
         filter.text.toString().trim().let { if (it.isNotEmpty()) args += listOf("--filter-by-name", it) }
         if (overwrite.isChecked) args += "-r"
         extra.text.toString().trim().let { if (it.isNotEmpty()) args += it.split(Regex("\\s+")) }
@@ -220,7 +224,7 @@ class MainActivity : AppCompatActivity() {
             .putString("in", input.text.toString()).putString("out", output.text.toString())
             .putString("name", filter.text.toString()).putString("extra", extra.text.toString())
             .putInt("mode", mode.selectedItemPosition).putInt("img", image.selectedItemPosition)
-            .putInt("aud", audio.selectedItemPosition).putInt("grp", group.selectedItemPosition)
+            .putInt("aud", audio.selectedItemPosition).putInt("grp", group.selectedItemPosition).putInt("fmt", name.selectedItemPosition)
             .putBoolean("ow", overwrite.isChecked)
             .putStringSet("types", (0 until chips.childCount).map { chips.getChildAt(it) as Chip }
                 .filter { it.isChecked }.map { it.tag as String }.toSet())
@@ -231,7 +235,7 @@ class MainActivity : AppCompatActivity() {
         input.setText(prefs.getString("in", "")); output.setText(prefs.getString("out", "/sdcard/AssetStudio"))
         filter.setText(prefs.getString("name", "")); extra.setText(prefs.getString("extra", ""))
         mode.setSelection(prefs.getInt("mode", 0)); image.setSelection(prefs.getInt("img", 0))
-        audio.setSelection(prefs.getInt("aud", 0)); group.setSelection(prefs.getInt("grp", 0))
+        audio.setSelection(prefs.getInt("aud", 0)); group.setSelection(prefs.getInt("grp", 0)); name.setSelection(prefs.getInt("fmt", 0))
         overwrite.isChecked = prefs.getBoolean("ow", false)
         val sel = prefs.getStringSet("types", emptySet()) ?: emptySet()
         (0 until chips.childCount).map { chips.getChildAt(it) as Chip }.forEach { it.isChecked = (it.tag as String) in sel }

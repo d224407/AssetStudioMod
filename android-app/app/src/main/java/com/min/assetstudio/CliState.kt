@@ -3,7 +3,7 @@ package com.min.assetstudio
 import android.os.Handler
 import android.os.Looper
 
-/** Shared run state and log buffer between the service and the UI. */
+/** Run state and log shared by service and UI. */
 object CliState {
     enum class Phase { IDLE, INSTALLING, RUNNING, DONE, ERROR }
 
@@ -35,7 +35,7 @@ object CliState {
         notifyUi()
     }
 
-    // Coalesce bursts of log lines into one UI refresh.
+    // Batch UI refreshes
     private fun notifyUi() {
         if (pending) return
         pending = true

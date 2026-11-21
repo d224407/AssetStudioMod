@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-# Creates a release keystore ONCE and prints what to store as GitHub secrets.
-# In-app updates only install over an older build when both are signed with the same key, so keep
-# release.jks safe and never regenerate it.
-#
-# Usage: scripts/make-keystore.sh [file] [alias]
+# Release keystore (once). Keep release.jks; never regenerate.
+# Usage: android/make-keystore.sh [file] [alias]
 set -euo pipefail
 OUT="${1:-release.jks}"
 ALIAS="${2:-assetstudio}"

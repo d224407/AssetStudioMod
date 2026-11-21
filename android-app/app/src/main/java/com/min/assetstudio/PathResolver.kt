@@ -4,7 +4,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 
-/** Maps a SAF URI to a real path; the CLI only understands paths. */
+/** SAF URI to real path. */
 object PathResolver {
     fun resolve(uri: Uri, tree: Boolean): String? = try {
         val id = if (tree) DocumentsContract.getTreeDocumentId(uri) else DocumentsContract.getDocumentId(uri)
